@@ -7,6 +7,8 @@
 #include <iomanip>
 #include <limits> 
 #include <numeric>
+#include <algorithm>
+#include <cmath>
 
 #undef max
 
@@ -25,5 +27,8 @@ struct Instance
 void printMatrix(std::vector<std::vector<int>> matrix);
 std::vector<std::vector<int>> northWestCorner(Instance Instance);
 std::vector<std::vector<int>> minElemMethod(Instance Instance);
+
+void calculatePotentials(Instance Instance, std::vector<std::vector<int>> basis);
+void gaussJordanMatrixSolver(std::vector<std::vector<double>>& matrix);
 
 #endif 

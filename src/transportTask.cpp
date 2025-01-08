@@ -41,6 +41,7 @@ std::vector<std::vector<int>> northWestCorner(Instance Instance)
     return res;
 }
 
+// Метод минимального элемента
 std::vector<std::vector<int>> minElemMethod(Instance Instance)
 {
     std::vector<std::vector<int>> res( // инициализация матрицы с нулями
@@ -85,3 +86,109 @@ std::vector<std::vector<int>> minElemMethod(Instance Instance)
     return res;
 }
 
+// Расчет потенциалов
+void calculatePotentials(Instance Instance, std::vector<std::vector<int>> basis)
+{
+    // Матрица Гаусса для линейных уравнений формата:
+    // V1 + V2 + .. + Vn + W1 + W2 + .. + Wm = const
+    std::vector<std::vector<double>> sysOfLinEqu(
+        Instance.prod.size() + Instance.cons.size(),
+        (std::vector<double>(Instance.prod.size() + Instance.cons.size() + 1, 0))
+    );
+
+    int k = 0; // номер уравнения
+    // V1 = 0
+    sysOfLinEqu[k][0] = 1;
+    sysOfLinEqu[k][sysOfLinEqu[0].size() - 1] = 0;
+    k++;
+    // Цикл заполнения матрицы
+    for (int i = 0; i < Instance.prod.size(); i++)
+    {
+        for (int j = 0; j < Instance.cons.size(); j++)
+        {
+            if (basis[i][j] != 0)
+            {
+                sysOfLinEqu[k][i] = 1;
+                sysOfLinEqu[k][4 + j] = 1;
+                sysOfLinEqu[k][sysOfLinEqu[0].size() - 1] = double(Instance.cost[i][j]);
+                k++;
+            }
+        }        
+    }
+
+    // Решение системы линейных уравнений
+    gaussJordanMatrixSolver(sysOfLinEqu);
+
+    // Вывод потенциалов отдельно в вектора
+    std::vector<int> V, W;
+    for (int i = 0; i < Instance.prod.size(); i++)
+        V.push_back(int(sysOfLinEqu[i][sysOfLinEqu[0].size() - 1]));
+    for (int j = 0; j < Instance.cons.size(); j++)
+        W.push_back(int(sysOfLinEqu[Instance.prod.size() + j][sysOfLinEqu[0].size() - 1]));
+    
+    // Заполнение симлпекс разностей
+    std::vector<std::pair<coordinates, int>> simplexDiff;
+
+    for (int i = 0; i < Instance.prod.size(); i++)
+    {
+        for (int j = 0; j < Instance.cons.size(); j++)
+        {
+            if (basis[i][j] == 0)
+            {
+                simplexDiff.push_back(std::make_pair(coordinates{i,j}, (Instance.cost[i][j] - (V[i] + W[j]))));
+            }
+        }
+    }
+}
+
+// Решение линейных уравнений методом Жордана Гаусса
+void gaussJordanMatrixSolver(std::vector<std::vector<double>>& matrix)
+{
+    int n = matrix.size();
+    int m = matrix[0].size();
+
+    for (int i = 0; i < n; ++i) {
+        // Поиск максимума в текущей колоннке
+        double maxEl = abs(matrix[i][i]);
+        int maxRow = i;
+        for (int k = i + 1; k < n; ++k) {
+            if (abs(matrix[k][i]) > maxEl) {
+                maxEl = abs(matrix[k][i]);
+                maxRow = k;
+            }
+        }
+
+        // Обмен максимальной строки с текущей строкой (колонна за колонной)
+        for (int k = i; k < m; ++k) {
+            std::swap(matrix[maxRow][k], matrix[i][k]);
+        }
+
+        // Преобразование всех строк ниже в 0 в текущей колонне
+        for (int k = i + 1; k < n; ++k) {
+            double c = -matrix[k][i] / matrix[i][i]; // получение знака
+            for (int j = i; j < m; ++j) {
+                if (i == j) {
+                    matrix[k][j] = 0;
+                } else {
+                    matrix[k][j] += c * matrix[i][j];
+                }
+            }
+        }
+    }
+
+    // Решение оставшегося верхнего треугольника, преобразование в единичную матрицу
+    std::vector<double> x(n);
+    for (int i = n - 1; i >= 0; --i) {
+        // Деление всех элементов в строке
+        double div = matrix[i][i];
+        for (int w = 0; w < m; w++)
+            matrix[i][w] /= div;
+
+        // Вычитание элементов в строках сверху
+        for (int k = i - 1; k >= 0; --k) {
+            double mul = matrix[k][i];
+            for(int l = 0; l < m; l++)
+                matrix[k][l] -= matrix[i][l] * mul;
+        }
+    }    
+}

@@ -19,5 +19,21 @@ int main(){
     printMatrix(northWestCorner(Small));
     printMatrix(minElemMethod(Small));
 
+    std::vector<std::vector<double>> A = {
+        {1, 0, 0, 0, 1, 0, 0, 0, 15},
+        {1, 0, 0, 0, 0, 1, 0, 0, 4},
+        {1, 0, 0, 0, 0, 0, 1, 0, 10},
+        {0, 1, 0, 0, 0, 0, 1, 0, 7},
+        {0, 0, 1, 0, 0, 0, 1, 0, 8},
+        {0, 0, 1, 0, 0, 0, 0, 1, 6},
+        {0, 0, 0, 1, 0, 0, 0, 1, 2},
+        {1, 0, 0, 0, 0, 0, 0, 0, 0},
+    };
+
+    gaussJordanMatrixSolver(A);
+    
+    auto basis = northWestCorner(Small);
+    calculatePotentials(Small, basis);
+
     return 0;
 }
