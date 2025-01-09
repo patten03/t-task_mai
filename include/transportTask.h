@@ -9,8 +9,11 @@
 #include <numeric>
 #include <algorithm>
 #include <cmath>
+#include <unordered_map>
 
 #undef max
+
+enum direction {right = 0, up, left, down};
 
 struct coordinates
 {
@@ -28,6 +31,8 @@ void printMatrix(std::vector<std::vector<int>> matrix);
 std::vector<std::vector<int>> northWestCorner(Instance Instance);
 std::vector<std::vector<int>> minElemMethod(Instance Instance);
 
+
+std::vector<std::pair<coordinates, int>> findClosedLoop(std::vector<std::vector<bool>> basisElem, coordinates start);
 void calculatePotentials(Instance Instance, std::vector<std::vector<int>> basis);
 void gaussJordanMatrixSolver(std::vector<std::vector<double>>& matrix);
 

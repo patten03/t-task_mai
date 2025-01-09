@@ -1,5 +1,4 @@
 #include "transportTask.h"
-#include <iostream>
 
 int main(){
     SetConsoleCP(1251);
@@ -34,6 +33,25 @@ int main(){
     
     auto basis = northWestCorner(Small);
     calculatePotentials(Small, basis);
+
+
+    std::vector<std::vector<bool>> B = {
+        // {1, 1, 1, 0},
+        // {0, 0, 1, 0},
+        // {1, 0, 1, 1},
+        // {0, 0, 0, 1}
+
+        {1, 1, 0, 0},
+        {1, 0, 0, 1},
+        {0, 0, 0, 0},
+        {0, 1, 0, 1}
+
+        // {1, 1, 1, 0},
+        // {0, 0, 1, 0},
+        // {0, 0, 1, 1},
+        // {0, 0, 0, 1}
+    };
+    findClosedLoop(B, {0,0});
 
     return 0;
 }
