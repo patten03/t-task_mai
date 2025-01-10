@@ -25,15 +25,19 @@ struct Instance
     std::vector<std::vector<int>> cost;
     std::vector<int> prod;
     std::vector<int> cons;
+
+    std::vector<std::vector<int>> solution;
+    std::vector<std::vector<bool>> basis;
 };
 
 void printMatrix(std::vector<std::vector<int>> matrix);
-std::vector<std::vector<int>> northWestCorner(Instance Instance);
-std::vector<std::vector<int>> minElemMethod(Instance Instance);
+void printMatrix(std::vector<std::vector<bool>> matrix);
+void northWestCorner(Instance& Inst);
+void minElemMethod(Instance& Inst);
 
-
-std::vector<std::pair<coordinates, int>> findClosedLoop(std::vector<std::vector<bool>> basisElem, coordinates start);
-void calculatePotentials(Instance Instance, std::vector<std::vector<int>> basis);
+std::vector<coordinates> findClosedLoop(std::vector<std::vector<bool>> basisElem, coordinates start);
+bool calculatePotentials(Instance& Instances);
 void gaussJordanMatrixSolver(std::vector<std::vector<double>>& matrix);
+
 
 #endif 

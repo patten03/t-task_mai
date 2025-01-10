@@ -15,85 +15,139 @@ void printMatrix(std::vector<std::vector<int>> matrix)
 }
 
 // Алгоритм северо-западного угла
-std::vector<std::vector<int>> northWestCorner(Instance Instance)
+void northWestCorner(Instance& Inst)
 {
+    // Инициализация матрицы базисов
+    Inst.basis.resize(Inst.prod.size());
+    for (auto &i : Inst.basis)
+    {
+        i.resize(Inst.cons.size());
+        std::fill(i.begin(), i.end(), false);
+    }
+    
+    Instance Buff = Inst;
+
     std::vector<std::vector<int>> res( // инициализация матрицы с нулями
-        Instance.prod.size(),
-        (std::vector<int>(Instance.cons.size(), 0))
+        Buff.prod.size(),
+        (std::vector<int>(Buff.cons.size(), 0))
     );
 
     int i(0);
     int j(0);
-    while ((Instance.prod.size() + Instance.cons.size() - 1) > (i + j + 1))
+    while ((Buff.prod.size() + Buff.cons.size() - 1) > (i + j + 1))
     {
 
-        while(Instance.cons[j] > 0) // идем вниз, пока потребление не станет равно 0
+        while(Buff.cons[j] > 0) // идем вниз, пока потребление не станет равно 0
         {
-            res[i][j] = min(Instance.cons[j], Instance.prod[i]);
-            Instance.cons[j] -= res[i][j]; // записываем сколько единиц потребления осталось
-            Instance.prod[i] -= res[i][j]; // записываем сколько единиц производства осталось
-            if (Instance.cons[j] > 0)
+            res[i][j] = min(Buff.cons[j], Buff.prod[i]);
+            Buff.basis[i][j] = true;
+            Buff.cons[j] -= res[i][j]; // записываем сколько единиц потребления осталось
+            Buff.prod[i] -= res[i][j]; // записываем сколько единиц производства осталось
+            if (Buff.cons[j] > 0)
                 i++;
         } 
         j++; // переход вправо
     }
 
-    return res;
+    Inst.solution = res;
+    Inst.basis = Buff.basis;
 }
 
 // Метод минимального элемента
-std::vector<std::vector<int>> minElemMethod(Instance Instance)
+void minElemMethod(Instance& Inst)
 {
-    std::vector<std::vector<int>> res( // инициализация матрицы с нулями
-        Instance.prod.size(),
-        (std::vector<int>(Instance.cons.size(), 0))
+    // Инициализация матрицы базисов
+    Inst.basis.resize(Inst.prod.size());
+    for (auto &i : Inst.basis)
+    {
+        i.resize(Inst.cons.size());
+        std::fill(i.begin(), i.end(), false);
+    }
+
+    Instance Buff = Inst;
+
+    std::vector<std::vector<int>> res( // инициализация матрицы решения с нулями
+        Inst.prod.size(),
+        (std::vector<int>(Inst.cons.size(), 0))
     );
 
     // До тех пор, пока не будут использованны все потребления и производства
+    int count = 0;
+    int minElemVal = std::numeric_limits<int>::max();
+    coordinates minElemCoord;
     while (
-        std::accumulate(Instance.prod.begin(), Instance.prod.end(), 0)
-        + std::accumulate(Instance.cons.begin(), Instance.cons.end(), 0)
+        std::accumulate(Buff.prod.begin(), Buff.prod.end(), 0)
+        + std::accumulate(Buff.cons.begin(), Buff.cons.end(), 0)
         > 0)
     {
-        int minElemVal = std::numeric_limits<int>::max();
-        coordinates minElemCoord;
-
         // Полный проход по матрице для поиска минимального элемента
-        for (int i(0); i < Instance.prod.size(); i++)
+        for (int i(0); i < Buff.prod.size(); i++)
         {
-            for (int j(0); j < Instance.cons.size(); j++)
+            for (int j(0); j < Buff.cons.size(); j++)
             {
-                if (minElemVal >= Instance.cost[i][j])
+                if (minElemVal >= Buff.cost[i][j])
                 {
-                    minElemVal = Instance.cost[i][j];
+                    minElemVal = Buff.cost[i][j];
                     minElemCoord = {j, i};
                 }
             }
         }
 
         // Проверка на то, можем ли мы использовать данный элемент, хватает ли производств или требуется ли потреблению
-        if (Instance.prod[minElemCoord.y] > 0 && Instance.cons[minElemCoord.x] > 0)
+        if (Buff.prod[minElemCoord.y] > 0 && Buff.cons[minElemCoord.x] > 0)
         {
-            res[minElemCoord.y][minElemCoord.x] = min(Instance.cons[minElemCoord.x], Instance.prod[minElemCoord.y]);
-            Instance.cons[minElemCoord.x] -= res[minElemCoord.y][minElemCoord.x]; // записываем сколько единиц потребления осталось
-            Instance.prod[minElemCoord.y] -= res[minElemCoord.y][minElemCoord.x]; // записываем сколько единиц производства осталось
+            res[minElemCoord.y][minElemCoord.x] = min(Buff.cons[minElemCoord.x], Buff.prod[minElemCoord.y]);
+            Inst.basis[minElemCoord.y][minElemCoord.x] = true;
+            Buff.cons[minElemCoord.x] -= res[minElemCoord.y][minElemCoord.x]; // записываем сколько единиц потребления осталось
+            Buff.prod[minElemCoord.y] -= res[minElemCoord.y][minElemCoord.x]; // записываем сколько единиц производства осталось
+            count++;
         }
 
         // Заменяем наименьший элемент на большое число для последующего поиска следующего элемента
-        Instance.cost[minElemCoord.y][minElemCoord.x] = std::numeric_limits<int>::max();
+        Buff.cost[minElemCoord.y][minElemCoord.x] = std::numeric_limits<int>::max();
+        minElemVal = std::numeric_limits<int>::max();
     }
 
-    return res;
+    // Дополнение базисами решения, пока их количество не станет m - n - 1
+    while (count < Buff.cons.size() + Buff.prod.size() - 1)
+    {
+        // Полный проход по матрице для поиска минимального элемента
+        for (int i(0); i < Buff.prod.size(); i++)
+        {
+            for (int j(0); j < Buff.cons.size(); j++)
+            {
+                if (minElemVal >= Buff.cost[i][j])
+                {
+                    minElemVal = Buff.cost[i][j];
+                    minElemCoord = {j, i};
+                }
+            }
+        }
+
+        // Проверка на то, можем ли мы взять этот элемент, не создает ли он цепочку
+        Inst.basis[minElemCoord.y][minElemCoord.x] = true;
+        auto loop = findClosedLoop(Inst.basis, minElemCoord);
+        if (loop.back().x == -1 && loop.back().x == -1)
+        {
+            count++;
+        }
+        else
+        {
+            Inst.basis[minElemCoord.y][minElemCoord.x] = false;
+        }
+    }
+
+    Inst.solution = res;
 }
 
 // Расчет потенциалов
-void calculatePotentials(Instance Instance, std::vector<std::vector<int>> basis)
+bool calculatePotentials(Instance& Inst)
 {
     // Матрица Гаусса для линейных уравнений формата:
     // V1 + V2 + .. + Vn + W1 + W2 + .. + Wm = const
     std::vector<std::vector<double>> sysOfLinEqu(
-        Instance.prod.size() + Instance.cons.size(),
-        (std::vector<double>(Instance.prod.size() + Instance.cons.size() + 1, 0))
+        Inst.prod.size() + Inst.cons.size(),
+        (std::vector<double>(Inst.prod.size() + Inst.cons.size() + 1, 0))
     );
 
     int k = 0; // номер уравнения
@@ -102,15 +156,16 @@ void calculatePotentials(Instance Instance, std::vector<std::vector<int>> basis)
     sysOfLinEqu[k][sysOfLinEqu[0].size() - 1] = 0;
     k++;
     // Цикл заполнения матрицы
-    for (int i = 0; i < Instance.prod.size(); i++)
+    for (int i = 0; i < Inst.prod.size(); i++)
     {
-        for (int j = 0; j < Instance.cons.size(); j++)
+        for (int j = 0; j < Inst.cons.size(); j++)
         {
-            if (basis[i][j] != 0)
+            // if (basis[i][j] != 0)
+            if (Inst.basis[i][j] != false)
             {
                 sysOfLinEqu[k][i] = 1;
-                sysOfLinEqu[k][4 + j] = 1;
-                sysOfLinEqu[k][sysOfLinEqu[0].size() - 1] = double(Instance.cost[i][j]);
+                sysOfLinEqu[k][Inst.cons.size() + j] = 1;
+                sysOfLinEqu[k][sysOfLinEqu[0].size() - 1] = double(Inst.cost[i][j]);
                 k++;
             }
         }        
@@ -121,24 +176,80 @@ void calculatePotentials(Instance Instance, std::vector<std::vector<int>> basis)
 
     // Вывод потенциалов отдельно в вектора
     std::vector<int> V, W;
-    for (int i = 0; i < Instance.prod.size(); i++)
+    for (int i = 0; i < Inst.prod.size(); i++)
         V.push_back(int(sysOfLinEqu[i][sysOfLinEqu[0].size() - 1]));
-    for (int j = 0; j < Instance.cons.size(); j++)
-        W.push_back(int(sysOfLinEqu[Instance.prod.size() + j][sysOfLinEqu[0].size() - 1]));
+    for (int j = 0; j < Inst.cons.size(); j++)
+        W.push_back(int(sysOfLinEqu[Inst.prod.size() + j][sysOfLinEqu[0].size() - 1]));
     
     // Заполнение симлпекс разностей
     std::vector<std::pair<coordinates, int>> simplexDiff;
+    std::pair<coordinates, int> minimum({-1, -1}, std::numeric_limits<int>::max());
 
-    for (int i = 0; i < Instance.prod.size(); i++)
+    for (int i = 0; i < Inst.prod.size(); i++)
     {
-        for (int j = 0; j < Instance.cons.size(); j++)
+        for (int j = 0; j < Inst.cons.size(); j++)
         {
-            if (basis[i][j] == 0)
+            if (Inst.solution[i][j] == false)
             {
-                simplexDiff.push_back(std::make_pair(coordinates{i,j}, (Instance.cost[i][j] - (V[i] + W[j]))));
+                simplexDiff.push_back(std::make_pair(coordinates{j,i}, (Inst.cost[i][j] - (V[i] + W[j]))));
+                // Поиск минимума симлекс разности
+                if (simplexDiff.back().second <= minimum.second)
+                    minimum = simplexDiff.back();
             }
         }
     }
+
+    // Нахождение минимальной разницы
+    auto additional = std::min_element(simplexDiff.cbegin(), simplexDiff.cend(), [](const auto& lhs, const auto& rhs) {
+        return lhs.second < rhs.second; } );
+
+    // Проверка выполнения условия оптимальности
+    if ((*additional).second >= 0)
+    {
+        return true;
+    }
+    else
+    {
+        // Добавление нового элемента в базис
+        coordinates temp = coordinates{(*additional).first.x, (*additional).first.y};
+        Inst.basis[temp.y][temp.x] = true;
+        
+        std::vector<coordinates> closedLoop = findClosedLoop(Inst.basis, (*additional).first);
+        
+        // Вывод "отрицательных" четных элементов
+        for (auto elem : closedLoop)
+        {
+            std::cout << "(" << (elem.y + 1) <<  "," << (elem.x + 1) << ")" << " ";
+        }
+        std::cout << std::endl;
+
+        // Корректировка решения
+        // Вывод наименьшего отрицательного элемент
+        int delIter = 1;
+        int delVal = Inst.solution[closedLoop[delIter].y][closedLoop[delIter].x];
+        for (int i = 1; i < closedLoop.size(); i += 2)
+        {
+            if (delVal > Inst.solution[closedLoop[i].y][closedLoop[i].x])
+            {
+                delIter = i;
+                delVal = Inst.solution[closedLoop[delIter].y][closedLoop[delIter].x];
+            }
+        }
+
+        Inst.basis[closedLoop[delIter].y][closedLoop[delIter].x] = false;
+        
+        // Вычитание значение из нечетных мест и прибавления значения в четных местах
+        for (int i = 0; i < closedLoop.size(); i++)
+        {
+            // Нечетное по порядку, индекс будет четным
+            if (i % 2 == 0)
+                Inst.solution[closedLoop[i].y][closedLoop[i].x] += delVal;
+            else
+                Inst.solution[closedLoop[i].y][closedLoop[i].x] -= delVal;
+        }
+    }
+
+    return false;
 }
 
 // Решение линейных уравнений методом Жордана Гаусса
@@ -194,7 +305,7 @@ void gaussJordanMatrixSolver(std::vector<std::vector<double>>& matrix)
 }
 
 // Нахождение цепочки
-std::vector<std::pair<coordinates, int>> findClosedLoop(std::vector<std::vector<bool>> basisElem, coordinates start)
+std::vector<coordinates> findClosedLoop(std::vector<std::vector<bool>> basisElem, coordinates start)
 {
     // Первый шаг - исключение лишних строк и столбцов как по книге "Теоретические_основы_автоматизированного_управления_Хахулин_Красовская"
     // все лишние строки и столбцы будут заполнены false
@@ -235,20 +346,21 @@ std::vector<std::pair<coordinates, int>> findClosedLoop(std::vector<std::vector<
 
 
     // Второй шаг - поиск цепочки
-    std::vector<std::pair<coordinates, int>> res;
+    std::vector<coordinates> res;
     // Проверка на то, не вычеркнуто ли все, есть ли вообще цепочка
     if (std::all_of(crossedRow.begin(), crossedRow.end(), [](bool v) { return v; }) && 
         std::all_of(crossedCol.begin(), crossedCol.end(), [](bool v) { return v; }))
     {
         // Нет цепочки
-        res.push_back(std::make_pair(coordinates{-1,-1}, 0)); // знак того, что цепочки нет
+        res.push_back(coordinates{-1,-1}); // знак того, что цепочки нет
+        return res;
     }
     else
     {
         // Есть цепочка
         coordinates cur = start;
         coordinates prec = start;
-        res.push_back(std::make_pair(prec, 10));
+        res.push_back(prec);
         // Собираем цепочку пока текущая точка не является начальной
         do
         {
@@ -320,8 +432,8 @@ std::vector<std::pair<coordinates, int>> findClosedLoop(std::vector<std::vector<
                     !(buff.x == cur.x && buff.y == cur.y))
                 {
                     cur = buff;
-                    prec = res.back().first;
-                    res.push_back(std::make_pair(buff, 10));
+                    prec = res.back();
+                    res.push_back(buff);
                     
                     break;
                 }
@@ -329,6 +441,7 @@ std::vector<std::pair<coordinates, int>> findClosedLoop(std::vector<std::vector<
 
         } while (!(cur.x == start.x && cur.y == start.y));
     }
+
     res.pop_back();
     return res;
 }
