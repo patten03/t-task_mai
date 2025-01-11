@@ -55,7 +55,6 @@ int main()
         std::chrono::high_resolution_clock::time_point start;
         std::chrono::high_resolution_clock::time_point accept;
         std::chrono::high_resolution_clock::time_point done;
-        start = std::chrono::high_resolution_clock::now();
         int step = 0;
         switch (choice)
         {
@@ -64,6 +63,7 @@ int main()
                 std::cout << "Решение задачи алгоритмом северо-западного угла" << std::endl;
                 printTask(Small);
                 std::cout << std::endl;
+                start = std::chrono::high_resolution_clock::now();
                 northWestCorner(Small);
                 if (trace)
                 {
@@ -100,6 +100,7 @@ int main()
                 std::cout << "Решение задачи методом минимального элемента" << std::endl;
                 printTask(Small);
                 std::cout << std::endl;
+                start = std::chrono::high_resolution_clock::now();
                 minElemMethod(Small);
                 if (trace)
                 {
@@ -135,6 +136,7 @@ int main()
             {
                 std::cout << "Решение задачи алгоритмом северо-западного угла" << std::endl;
                 printTask(Big);
+                start = std::chrono::high_resolution_clock::now();
                 northWestCorner(Big);
                 accept = std::chrono::high_resolution_clock::now();
                 bool opt = false;
@@ -150,6 +152,7 @@ int main()
             {
                 std::cout << "Решение задачи методом минимального элемента" << std::endl;
                 printTask(Big);
+                start = std::chrono::high_resolution_clock::now();
                 minElemMethod(Big);
                 accept = std::chrono::high_resolution_clock::now();
                 bool opt = false;
