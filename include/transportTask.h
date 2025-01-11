@@ -9,9 +9,11 @@
 #include <numeric>
 #include <algorithm>
 #include <cmath>
-#include <unordered_map>
+#include <chrono>
 
 #undef max
+
+extern bool trace;
 
 enum direction {right = 0, up, left, down};
 
@@ -36,8 +38,13 @@ void northWestCorner(Instance& Inst);
 void minElemMethod(Instance& Inst);
 
 std::vector<coordinates> findClosedLoop(std::vector<std::vector<bool>> basisElem, coordinates start);
-bool calculatePotentials(Instance& Instances);
+bool calculatePotentials(Instance& Inst);
 void gaussJordanMatrixSolver(std::vector<std::vector<double>>& matrix);
+int total(Instance Inst);
 
+
+void printTask(Instance Inst);
+void printBasis(Instance Ints);
+void printResult(Instance Ints);
 
 #endif 

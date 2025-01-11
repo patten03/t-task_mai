@@ -1,5 +1,7 @@
 #include "transportTask.h"
 
+bool trace = false;
+
 // Вывод матрицы
 void printMatrix(std::vector<std::vector<int>> matrix)
 {
@@ -199,6 +201,32 @@ bool calculatePotentials(Instance& Inst)
         }
     }
 
+    if (trace)
+    {
+        std::cout << "Расчет потенциалов:" << std::endl;
+        for (int i = 0; i < Inst.prod.size(); i++)
+        {
+            std::cout << "V[" << (i + 1) << "]=" << V[i] << "  "; 
+        }
+        std::cout << std::endl;
+                for (int j = 0; j < Inst.prod.size(); j++)
+        {
+            std::cout << "W[" << (j + 1) << "]=" << W[j] << "  "; 
+        }
+        std::cout << std::endl;
+        
+        std::cout << "Симплекс-разности:" << std::endl;
+        for (auto & elem : simplexDiff)
+            std::cout
+                << "delta C["
+                << (elem.first.y + 1)
+                << ","
+                << (elem.first.x + 1)
+                <<"]="
+                << elem.second
+                << std::endl;
+    }
+
     // Нахождение минимальной разницы
     auto additional = std::min_element(simplexDiff.cbegin(), simplexDiff.cend(), [](const auto& lhs, const auto& rhs) {
         return lhs.second < rhs.second; } );
@@ -206,22 +234,36 @@ bool calculatePotentials(Instance& Inst)
     // Проверка выполнения условия оптимальности
     if ((*additional).second >= 0)
     {
+        if (trace)
+            std::cout << "Условие оптимальности выполняется" << std::endl;
         return true;
     }
     else
     {
+        if (trace)
+            std::cout << "Условие оптимальности не выполняется" << std::endl;
+
         // Добавление нового элемента в базис
         coordinates temp = coordinates{(*additional).first.x, (*additional).first.y};
         Inst.basis[temp.y][temp.x] = true;
-        
+        if (trace)
+            std::cout << "В базис вводится X(" << temp.y << "," << temp.x << ")" << std::endl;
+
+
         std::vector<coordinates> closedLoop = findClosedLoop(Inst.basis, (*additional).first);
         
-        // Вывод "отрицательных" четных элементов
-        for (auto elem : closedLoop)
+        // Вывод цепочки
+        if (trace)
         {
-            std::cout << "(" << (elem.y + 1) <<  "," << (elem.x + 1) << ")" << " ";
+            std::cout << "Сформирована цепочка из " << closedLoop.size() << " элементов:" << std::endl;
+            for (auto & coord : closedLoop)
+                std::cout << "X(" << (coord.y + 1) << "," << (coord.x + 1) << ")";
+            std::cout << std::endl;
+            std::cout << "Отрицательные элементы:" << std::endl;
+            for (int i = 1; i < closedLoop.size(); i += 2)
+                std::cout << "X(" << (closedLoop[i].y + 1) << "," << (closedLoop[i].x + 1) << ") ";
+            std::cout << std::endl;
         }
-        std::cout << std::endl;
 
         // Корректировка решения
         // Вывод наименьшего отрицательного элемент
@@ -246,6 +288,16 @@ bool calculatePotentials(Instance& Inst)
                 Inst.solution[closedLoop[i].y][closedLoop[i].x] += delVal;
             else
                 Inst.solution[closedLoop[i].y][closedLoop[i].x] -= delVal;
+        }
+
+        if (trace)
+        {
+            std::cout << "Из базиса выводится элемент X(" << (closedLoop[delIter].y + 1) << "," <<  (closedLoop[delIter].x + 1)  << ")" << std::endl;
+            std::cout << "Новый базис:" << std::endl;
+            printBasis(Inst);
+            std::cout << "Скорректированное решение:" << std::endl;
+            printMatrix(Inst.solution);
+            std::cout << "Значение целевой функции: " << total(Inst) << std::endl;
         }
     }
 
@@ -444,4 +496,72 @@ std::vector<coordinates> findClosedLoop(std::vector<std::vector<bool>> basisElem
 
     res.pop_back();
     return res;
+}
+
+// Нахождение значения целевой функции
+int total(Instance Inst)
+{
+    int res = 0;
+    for (int i = 0; i < Inst.prod.size(); i++)
+    {
+        for (int j = 0; j < Inst.cons.size(); j++)
+        {
+            if (Inst.basis[i][j])
+                res += Inst.solution[i][j] * Inst.cost[i][j];
+        }
+    }
+    return res;
+}
+
+void printTask(Instance Inst) 
+{
+    const int width(5);
+
+    std::cout << "Количество пунктов производства: " << Inst.prod.size() << std::endl;
+    std::cout << "Количестов пунктов потребления: " << Inst.cons.size() << std::endl;
+    std::cout << "Матрица стоимостей перевозок:" << std::endl;
+    printMatrix(Inst.cost);
+    std::cout << "Объемы производства в пунктах:" << std::endl;
+    for (const auto & elem : Inst.prod)
+    {
+        std::cout << std::setw(width) << elem << " ";            
+    }
+    std::cout << std::endl;
+    std::cout << "Объемы потребления в пунктах:" << std::endl;
+    for (const auto & elem : Inst.cons)
+    {
+        std::cout << std::setw(width) << elem << " ";            
+    }
+    std::cout << std::endl;
+    std::cout << "Закрытая транспортная задача" << std::endl;
+}
+
+void printBasis(Instance Inst)
+{
+    std::cout << "{";
+    for (int i = 0; i < Inst.prod.size(); i++)
+    {
+        for (int j = 0; j < Inst.cons.size(); j++)
+        {
+            if (Inst.basis[i][j])
+                std::cout << "(" << (i + 1) << "," << (j + 1) << ") "; 
+        }
+    }
+    std::cout << "}" << std::endl;
+}
+
+void printResult(Instance Inst)
+{
+    std::cout << "Итоговое оптимальное решение Т-задачи" << std::endl;
+    for (int i = 0; i < Inst.prod.size(); i++)
+    {
+        std::cout << "Из пункта производства " << (i + 1) << " с объёмом производства " << Inst.prod[i] << " перевозки:" << std::endl;
+        for (int j = 0; j < Inst.cons.size(); j++)
+        {
+            if (Inst.solution[i][j] != 0)
+            {
+                std::cout << "    - в пункт потребления " << j << ": " << Inst.solution[i][j] << std::endl;
+            }
+        }
+    }
 }
